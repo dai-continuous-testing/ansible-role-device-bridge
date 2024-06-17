@@ -1,0 +1,96 @@
+---
+
+# validation
+
+- name: assert all vars are set
+  assert: 
+    that: "{{ item }} != '' " 
+    quiet: true
+  with_items:
+  - installation_root_folder
+  - app_name
+  - app_version
+  - service_name
+  - installation_folder
+  - logs_folder
+  - service_file_path
+
+# 
+
+- name: test for current installation version
+  stat:
+    path: "{{ installation_root_folder }}/{{ app_name }}-current"
+  register: current_exists
+
+- name: load current_version from remote file
+  slurp:
+    src: "{{ installation_root_folder }}/{{ app_name }}-current"
+  register: current_file
+  when: 
+    - current_exists.stat.exists
+
+# - name: set current_version from remote file
+#   set_fact:
+#     current_version: "{{ current_file['content'] | b64decode }}"
+#   when: 
+#     - current_exists.stat.exists
+
+- name: move current to be previous
+  copy: 
+    dest: "{{ installation_root_folder }}/{{ app_name }}-previous"
+    content: "{{ current_file['content']|b64decode }}"
+  when: 
+    - current_exists.stat.exists
+    - current_file['content']|b64decode != app_version
+  become: yes
+
+- name: update current version with new version
+  copy: 
+    dest: "{{ installation_root_folder }}/{{ app_name }}-current"
+    content: "{{ app_version }}"
+  become: yes
+
+# stop old service
+
+- name: stop the old service
+  systemd:
+    name: "{{ service_name }}"
+    state: stopped
+  ignore_errors: yes
+  become: yes
+
+- name: copy service file
+  template:
+    src: systemd.service.j2
+    dest: "{{ service_file_path }}"
+  become: yes
+
+- name: copy start script
+  template:
+    src: start.sh.j2
+    dest: "{{ installation_folder }}/{{ launcher_file_name }}"
+    mode: 0777
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: remove existing logs folder from installation folder
+  file:
+    path: "{{ installation_folder }}/logs"
+    state: absent
+  become: yes
+
+- name: create sym link for logs folder
+  file:
+    src: "{{ logs_folder }}"
+    dest: "{{ installation_folder }}/logs"
+    state: link
+    mode: 0777
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: notify to start service
+  command: echo "notify to start service..."
+  notify:
+    - start the service
+
+

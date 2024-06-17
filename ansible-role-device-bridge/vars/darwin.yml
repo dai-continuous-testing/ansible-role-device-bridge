@@ -1,0 +1,29 @@
+---
+
+__installation_root_folder: "/Applications/Experitest"
+installation_folder: "{{ installation_root_folder }}/{{ app_name }}-{{ app_version }}"
+
+temp_folder: "/tmp/experitest"
+
+logs_folder: "/Library/Experitest/{{ app_name }}/logs"
+
+service_name: "com.experitest.{{ app_name }}"
+
+service_plist_file_path: "/Library/LaunchDaemons/{{ service_name }}.plist"
+
+installer_file_name: "device-bridge-{{ app_version }}.zip"
+
+relative_path: "app-signer/osx"
+
+launcher_file_name: "start.sh"
+
+java_download_filename: "OpenJDK8U-jre_x64_mac_hotspot_{{ java_version }}.tar.gz"
+
+java_relative_path: "java/osx"
+
+java_installation_folder: "{{ installation_root_folder }}/jre"
+
+java_bin: "{{ java_installation_folder }}/jdk{{ java_version }}-jre/Contents/Home/bin/java"
+
+__custom_download_username: "myuser"
+__custom_download_password: "mypassword"

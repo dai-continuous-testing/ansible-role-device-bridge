@@ -1,0 +1,51 @@
+---
+
+required_modifiable_fields:
+  - app_version
+  - server_port
+  - installation_root_folder
+  - java_version
+  - custom_download_username
+  - custom_download_password
+
+app_name: device-bridge
+__app_version: "1.0.DEBUG"
+
+# main_class: "com.experitest.app.signer.SignerApplication"
+
+__server_port: 8086
+
+__java_version: 17.0.3_7
+
+extra_java_options: []
+
+base_application_properties:
+  - "server.port": "{{ server_port }}"
+
+extra_application_properties: {}
+
+application_properties: "{{ base_application_properties | combine(extra_application_properties) }}"
+
+extra_logback_properties: {}
+
+logback_properties: "{{ extra_logback_properties }}"
+
+start_after_install: True
+
+clear_temp_folder: False
+clear_before_install: False
+
+kill_notepad: False
+
+convention: "device-bridge"
+
+custom_download_url: "http://192.168.1.213:8090/repository/download/DeviceBridge_DeviceBridge/1520148:id/device-bridge-1.0.DEBUG.zip"
+
+cdn_name: "devops-artifacts.experitest.com"
+s3_download_url: "https://{{ cdn_name }}/{{ relative_path }}/{{ installer_file_name }}"
+
+java_download_url: "https://{{ cdn_name }}/{{ java_relative_path }}/{{ java_download_filename }}"
+
+# 
+
+pairing_file_name: pairing

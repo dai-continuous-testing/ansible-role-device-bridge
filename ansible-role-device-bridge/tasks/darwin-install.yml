@@ -1,0 +1,225 @@
+
+# validation
+
+- name: assert all vars are set
+  assert: { that: "{{ item }} != '' " }
+  with_items:
+    - app_name
+    - clear_temp_folder
+    - service_name
+    - main_class
+    - installation_folder
+    - clear_before_install
+    - server_port
+    - service_plist_file_path
+    - installer_file_name
+    - ansible_user_id
+    - s3_download_url
+    - launcher_file_name
+    - application_properties
+    - extra_java_options
+    - logs_folder
+    - installer_file_name
+    - custom_download_url
+
+# set temp folder
+
+- name: make sure temp folder
+  file:
+    path: "{{ temp_folder }}"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+# required java dependency
+
+- name: make sure java is installed on the machine
+  command: "{{ java_bin }} -version"
+  register: java_test
+  become: yes
+  ignore_errors: yes
+
+- name: fail if java is not found
+  fail:
+    msg: "java must be accesible in path {{ java_bin }}"
+  when: java_test.rc != 0
+
+
+
+# download the file
+
+# - name: download zip from s3 url
+#   get_url:
+#     url: "{{ s3_download_url }}"
+#     dest: "{{ temp_folder }}/{{ installer_file_name }}"
+#     timeout: "{{ download_timeout | default(60) }}"
+#   when: custom_download_url == ""
+
+- name: download zip from custom url
+  get_url:
+    url: "{{ custom_download_url }}"
+    dest: "{{ temp_folder }}/{{ installer_file_name }}"
+    timeout: "{{ download_timeout | default(60) }}"
+  when: custom_download_url != ""
+
+# stop old service
+
+- name: stop the old service
+  command: "launchctl unload {{ service_plist_file_path }}"
+  become: yes
+
+# delete old installation (optional)
+
+- name: clear old installation folder
+  file: 
+    path: "{{ installation_folder }}"
+    state: absent
+  when: clear_before_install == True
+  notify:
+    - start the service
+
+# unpack and copy all the files to the installation folder
+
+- name: make sure installation folder exists
+  file:
+    path: "{{ installation_folder }}"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: make sure unzip folder exist
+  file:
+    path: "{{ temp_folder }}/{{ (installer_file_name | splitext)[0] }}"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: unzip the file
+  unarchive:
+    src: "{{ temp_folder }}/{{ installer_file_name }}"
+    dest: "{{ temp_folder }}/{{ (installer_file_name | splitext)[0] }}"
+    remote_src: yes
+    creates: "{{ temp_folder }}/{{ (installer_file_name | splitext)[0] }}/{{ convention }}"
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: copy the file to installation folder
+  command: "cp -r {{ temp_folder }}/{{ (installer_file_name | splitext)[0] }}/{{ convention }}/ {{ installation_folder }}/"
+  become: yes
+  notify:
+    - start the service
+
+- name: copy plist
+  template:
+    src: service.plist.j2
+    dest: "{{ service_plist_file_path }}"
+    # in mac - plist owner is root
+    owner: root
+  become: yes
+
+- name: copy start script
+  template:
+    src: start.sh.j2
+    dest: "{{ installation_folder }}/{{ launcher_file_name }}"
+    mode: 0755
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: Start the service using launchctl
+  command: "launchctl load {{ service_plist_file_path }}"
+  become: yes
+  
+# configure installed 
+
+- name: update application properties file
+  lineinfile:
+    path: "{{ installation_folder }}/config/application.properties"
+    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key | replace('.', '\\.') }}="
+  with_dict: "{{ application_properties }}"
+  become: yes
+
+- name: update logback properties file
+  lineinfile:
+    path: "{{ installation_folder }}/config/logback.properties"
+    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key | replace('.', '\\.') }}="
+  with_dict: "{{ logback_properties }}"
+  become: yes
+
+- name: make sure logs folder exists
+  file:
+    path: "{{ logs_folder }}"
+    state: directory
+    mode: 0777
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: remove existing logs folder from installation folder
+  file:
+    path: "{{ installation_folder }}/logs"
+    state: absent
+  become: yes
+
+- name: create sym link for logs folder
+  file:
+    src: "{{ logs_folder }}"
+    dest: "{{ installation_folder }}/logs"
+    state: link
+    mode: 0777
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+
+- name: reset pairing key
+  file:
+    path: "{{ installation_folder }}/config/{{ pairing_file_name }}"
+    state: absent
+  become: yes
+
+# remove vmoptions file
+
+- name: check vmoptions files to remove
+  find:
+    paths: "{{ installation_folder }}"
+    file_type: file
+    patterns: "*.vmoptions"
+  register: delete_vmoptions
+  become: yes
+
+- name: remove vmoptions files from installation folder
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  become: yes
+  with_items:
+    - "{{ delete_vmoptions.files }}"
+
+# set permission to zipalign file
+
+- name: check the zipalign file exists
+  stat:
+    path: "{{ installation_folder }}/bin/adb/js/darwin/zipalign"
+  register: zipalign_exists
+
+- name: set permissions to zipalign file
+  file:
+    path: "{{ installation_folder }}/bin/adb/js/darwin/zipalign"
+    state: file
+    mode: 0777
+  become: yes
+  when: zipalign_exists.stat.exists
+
+# expose role output
+
+- name: sanitize role name
+  set_fact:
+    sanitize_role_name: "{{ role_name | replace('-', '_') | regex_replace('([^A-Za-z0-9_])', '') | trim }}"
+
+- name: expose role output
+  set_fact:
+    "{{ sanitize_role_name }}":
+      server_port: "{{ server_port }}"
+      installation_folder: "{{ installation_folder }}"
+      configuration_file: "{{ installation_folder }}/config/application.properties"
+      service_plist_file_path: "{{ service_plist_file_path }}"

@@ -24,6 +24,12 @@
 
 # set temp folder
 
+- name: Install usblib (libusb) using Homebrew
+  become: yes  
+  ansible.builtin.homebrew:
+    name: libusb
+    state: present
+    
 - name: make sure temp folder
   file:
     path: "{{ temp_folder }}"
@@ -223,3 +229,6 @@
       installation_folder: "{{ installation_folder }}"
       configuration_file: "{{ installation_folder }}/config/application.properties"
       service_plist_file_path: "{{ service_plist_file_path }}"
+
+
+

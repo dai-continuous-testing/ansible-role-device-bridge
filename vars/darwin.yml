@@ -13,7 +13,7 @@ service_plist_file_path: "/Library/LaunchDaemons/{{ service_name }}.plist"
 
 installer_file_name: "device-bridge-{{ app_version }}.zip"
 
-relative_path: "app-signer/osx"
+relative_path: "device-bridge/osx"
 
 launcher_file_name: "start.sh"
 

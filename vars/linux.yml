@@ -16,7 +16,7 @@ service_file_path: "/etc/systemd/system/{{ service_name }}"
 
 installer_file_name: "device-bridge-{{ app_version }}.zip"
 
-relative_path: "app-signer/linux"
+relative_path: "device-bridge/linux"
 
 launcher_file_name: "start.sh"
 

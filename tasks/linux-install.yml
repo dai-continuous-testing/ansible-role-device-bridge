@@ -9,10 +9,9 @@
   - app_name
   - clear_temp_folder
   - service_name
-  - main_class
   - installation_folder
   - clear_before_install
-  - server_port
+  # - server_port
   - service_file_path
   - installer_file_name
   - ansible_user_id
@@ -91,22 +90,16 @@
 - name: unzip the file
   unarchive:
     src: "{{ temp_folder }}/{{ installer_file_name }}"
-    dest: "{{ temp_folder }}/{{ (installer_file_name | splitext)[0] }}"
-    remote_src: yes
-    creates: "{{ temp_folder }}/{{ (installer_file_name | splitext)[0] }}/{{ convention }}"
+    dest: "{{ installation_root_folder }}"
+    remote_src: true
     owner: "{{ ansible_user_id }}"
-  become: yes
-
-
-- name: synchronize zip content to installation folder
-  command: "rsync -r {{ temp_folder }}/{{ (installer_file_name | splitext)[0] }}/{{ convention }}/ {{ installation_folder }}/"
-  become: yes
+  become: true
   
 # configure installed 
 
 - name: update application properties file
   lineinfile:
-    path: "{{ installation_folder }}/config/application.properties"
+    path: "{{ installation_folder }}/conf/app.properties"
     line: "{{ item.key }}={{ item.value }}"
     regexp: "^{{ item.key | replace('.', '\\.') }}="
   with_dict: "{{ application_properties }}"
@@ -114,7 +107,7 @@
 
 - name: update logback properties file
   lineinfile:
-    path: "{{ installation_folder }}/config/logback.properties"
+    path: "{{ installation_folder }}/conf/logback.properties"
     line: "{{ item.key }}={{ item.value }}"
     regexp: "^{{ item.key | replace('.', '\\.') }}="
   with_dict: "{{ logback_properties }}"
@@ -134,28 +127,29 @@
     state: absent
   become: yes
 
-- name: reset pairing key
-  file:
-    path: "{{ installation_folder }}/config/{{ pairing_file_name }}"
-    state: absent
-  become: yes
+# - name: reset pairing key
+#   file:
+#     path: "{{ installation_folder }}/config/{{ pairing_file_name }}"
+#     state: absent
+#   become: yes
 
-# remove vmoptions file
+- name: notify to start service
+  command: echo "notify to start service..."
+  notify:
+    - start the service
 
-- name: check vmoptions files to remove
-  find:
-    paths: "{{ installation_folder }}"
-    file_type: file
-    patterns: "*.vmoptions"
-  register: delete_vmoptions
-  become: yes
+# expose role output
 
-- name: remove vmoptions files from installation folder
-  file:
-    path: "{{ item.path }}"
-    state: absent
-  become: yes
-  with_items:
-    - "{{ delete_vmoptions.files }}"
+- name: sanitize role name
+  set_fact:
+    sanitize_role_name: "{{ role_name | replace('-', '_') | regex_replace('([^A-Za-z0-9_])', '') | trim }}"
+
+- name: expose role output
+  set_fact:
+    "{{ sanitize_role_name }}":
+      # server_port: "{{ server_port }}"
+      installation_folder: "{{ installation_folder }}"
+      configuration_file: "{{ installation_folder }}/conf/app.properties"
+      service_plist_file_path: "{{ service_plist_file_path }}"
   
       

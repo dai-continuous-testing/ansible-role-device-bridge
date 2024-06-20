@@ -1,3 +1,11 @@
 #!/bin/sh
 
+# env var for mac Big Sur
+SYSTEM_VERSION_COMPAT=0
+export SYSTEM_VERSION_COMPAT=0
+
+export JAVA_HOME={{ java_home }}
+
+export PATH=$JAVA_HOME/bin:$PATH
+
 {{ installation_folder }}/bin/device-bridge

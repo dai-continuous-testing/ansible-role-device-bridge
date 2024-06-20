@@ -2,7 +2,7 @@
 
 required_modifiable_fields:
   - app_version
-  - server_port
+  # - server_port
   - installation_root_folder
   - java_version
   - custom_download_username
@@ -11,14 +11,14 @@ required_modifiable_fields:
 app_name: device-bridge
 __app_version: "1.0.DEBUG"
 
-__server_port: 8086
+# __server_port: 8086
 
 __java_version: 17.0.3_7
 
 extra_java_options: []
 
-base_application_properties:
-  - "server.port": "{{ server_port }}"
+base_application_properties: {}
+  # - "server.port": "{{ server_port }}"
 
 extra_application_properties: {}
 
@@ -37,7 +37,7 @@ kill_notepad: False
 
 convention: "device-bridge"
 
-custom_download_url: "http://192.168.1.213:8090/repository/download/DeviceBridge_DeviceBridge/1520148:id/device-bridge-1.0.DEBUG.zip"
+custom_download_url: ""
 
 cdn_name: "devops-artifacts.experitest.com"
 s3_download_url: "https://{{ cdn_name }}/{{ relative_path }}/{{ installer_file_name }}"

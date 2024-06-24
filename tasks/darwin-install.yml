@@ -173,12 +173,6 @@
   become: yes
 
 
-# - name: reset pairing key
-#   file:
-#     path: "{{ installation_folder }}/config/{{ pairing_file_name }}"
-#     state: absent
-#   become: yes
-
 - name: notify to start service
   command: echo "notify to start service..."
   notify:

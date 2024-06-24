@@ -2,7 +2,6 @@
 
 required_modifiable_fields:
   - app_version
-  # - server_port
   - installation_root_folder
   - java_version
   - custom_download_username
@@ -11,14 +10,12 @@ required_modifiable_fields:
 app_name: device-bridge
 __app_version: "1.0.DEBUG"
 
-# __server_port: 8086
 
 __java_version: 17.0.3_7
 
 extra_java_options: []
 
 base_application_properties: {}
-  # - "server.port": "{{ server_port }}"
 
 extra_application_properties: {}
 

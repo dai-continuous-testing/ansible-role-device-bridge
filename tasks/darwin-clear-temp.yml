@@ -2,7 +2,7 @@
   find:
     paths: "{{ temp_folder }}"
     file_type: "{{ item }}"
-    patterns: "*-SIGNER-*"
+    patterns: "device-bridge-*"
   become: yes
   with_items:
     - file

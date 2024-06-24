@@ -1,0 +1,149 @@
+
+# validation
+
+- name: assert all vars are set
+  assert: 
+    that: "{{ item }} != '' " 
+    quiet: true
+  with_items:
+  - app_name
+  - clear_temp_folder
+  - service_name
+  - installation_folder
+  - clear_before_install
+  - service_file_path
+  - installer_file_name
+  - ansible_user_id
+  - s3_download_url
+  - launcher_file_name
+  - application_properties
+  - extra_java_options
+  - logs_folder
+
+# required dependencies
+
+# set temp folder
+
+- name: make sure temp folder
+  file:
+    path: "{{ temp_folder }}"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+# required java dependency
+
+- name: make sure java is installed on the machine
+  command: "{{ java_bin }} -version"
+  register: java_test
+  become: yes
+  ignore_errors: yes
+
+- name: fail if java is not found
+  fail:
+    msg: "java must be accesible in path {{ java_bin }}"
+  when: java_test.rc != 0
+
+# download the file
+
+- name: download zip from s3 url
+  get_url:
+    url: "{{ s3_download_url }}"
+    dest: "{{ temp_folder }}/{{ installer_file_name }}"
+    timeout: "{{ download_timeout | default(60) }}"
+  when: custom_download_url == ""
+
+- name: download zip from custom url
+  get_url:
+    url: "{{ custom_download_url }}"
+    dest: "{{ temp_folder }}/{{ installer_file_name }}"
+    timeout: "{{ download_timeout | default(60) }}"
+  when: custom_download_url != ""
+
+
+
+# delete old installation (optional)
+
+- name: clear old installation folder
+  file: 
+    path: "{{ installation_folder }}"
+    state: absent
+  when: clear_before_install == True
+
+# unpack and copy all the files to the installation folder
+
+- name: make sure installation folder exists
+  file:
+    path: "{{ installation_folder }}"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: make sure unzip folder exist
+  file:
+    path: "{{ temp_folder }}/{{ (installer_file_name | splitext)[0] }}"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: unzip the file
+  unarchive:
+    src: "{{ temp_folder }}/{{ installer_file_name }}"
+    dest: "{{ installation_root_folder }}"
+    remote_src: true
+    owner: "{{ ansible_user_id }}"
+  become: true
+  
+# configure installed 
+
+- name: update application properties file
+  lineinfile:
+    path: "{{ installation_folder }}/conf/app.properties"
+    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key | replace('.', '\\.') }}="
+  with_dict: "{{ application_properties }}"
+  become: yes
+
+- name: update logback properties file
+  lineinfile:
+    path: "{{ installation_folder }}/conf/logback.properties"
+    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key | replace('.', '\\.') }}="
+  with_dict: "{{ logback_properties }}"
+  become: yes
+
+- name: make sure logs folder exists
+  file:
+    path: "{{ logs_folder }}"
+    state: directory
+    mode: 0777
+    owner: "{{ ansible_user_id }}"
+  become: yes
+
+- name: remove existing logs folder from installation folder
+  file:
+    path: "{{ installation_folder }}/logs"
+    state: absent
+  become: yes
+
+
+- name: notify to start service
+  command: echo "notify to start service..."
+  notify:
+    - start the service
+
+# expose role output
+
+- name: sanitize role name
+  set_fact:
+    sanitize_role_name: "{{ role_name | replace('-', '_') | regex_replace('([^A-Za-z0-9_])', '') | trim }}"
+
+- name: expose role output
+  set_fact:
+    "{{ sanitize_role_name }}":
+      # server_port: "{{ server_port }}"
+      installation_folder: "{{ installation_folder }}"
+      configuration_file: "{{ installation_folder }}/conf/app.properties"
+      service_plist_file_path: "{{ service_plist_file_path }}"
+  
+      

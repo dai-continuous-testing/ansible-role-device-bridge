@@ -22,7 +22,6 @@
     - extra_java_options
     - logs_folder
     - installer_file_name
-    - custom_download_url
 
 # set temp folder
 

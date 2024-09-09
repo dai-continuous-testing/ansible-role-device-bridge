@@ -1,7 +1,3 @@
-- name: stop the service
-  command: "launchctl unload {{ service_plist_file_path }}"
-  become: yes
-
 - name: start the service
   command: "launchctl load {{ service_plist_file_path }}"
   become: yes

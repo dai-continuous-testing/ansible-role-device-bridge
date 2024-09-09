@@ -124,10 +124,6 @@
     mode: 0755
     owner: "{{ ansible_user_id }}"
   become: yes
-
-- name: Start the service using launchctl
-  command: "launchctl load {{ service_plist_file_path }}"
-  become: yes
   
 # configure installed 
 

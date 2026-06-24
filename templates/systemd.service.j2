@@ -4,6 +4,14 @@ Description={{ app_name }} service
 
 [Service]
 WorkingDirectory={{ installation_folder }}
+{% if otel_enabled | bool %}
+Environment="OTEL_SERVICE_NAME={{ otel_service_name }}"
+Environment="OTEL_EXPORTER_OTLP_ENDPOINT={{ otel_alloy_endpoint }}"
+Environment="OTEL_RESOURCE_ATTRIBUTES=deployment.environment={{ otel_environment }},service.namespace={{ otel_namespace }},customer={{ otel_customer }}"
+Environment="OTEL_METRICS_EXPORTER=otlp"
+Environment="OTEL_LOGS_EXPORTER=otlp"
+Environment="OTEL_TRACES_EXPORTER=otlp"
+{% endif %}
 ExecStart={{ installation_folder }}/{{ launcher_file_name }}
 
 # ExecStop=/bin/pkill -15 java

@@ -8,4 +8,12 @@ export JAVA_HOME={{ java_home }}
 
 export PATH=$JAVA_HOME/bin:$PATH
 
+{% if otel_enabled | bool %}
+export OTEL_SERVICE_NAME={{ otel_service_name }}
+export OTEL_EXPORTER_OTLP_ENDPOINT={{ otel_alloy_endpoint }}
+export OTEL_RESOURCE_ATTRIBUTES=deployment.environment={{ otel_environment }},service.namespace={{ otel_namespace }},customer={{ otel_customer }}
+export OTEL_METRICS_EXPORTER=otlp
+export OTEL_LOGS_EXPORTER=otlp
+export OTEL_TRACES_EXPORTER=otlp
+{% endif %}
 {{ installation_folder }}/bin/device-bridge

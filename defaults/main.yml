@@ -13,6 +13,26 @@ __app_version: "1.0.DEBUG"
 
 __java_version: 17.0.18_8
 
+# OpenTelemetry Configuration
+# device-bridge is a standard JVM app (bin/device-bridge -> java ai.digital.ct.bridge.DeviceBridge),
+# so instrumentation is via the OTel Java agent attached with JAVA_TOOL_OPTIONS and configured
+# entirely through OTEL_* env vars. Injection happens in a single place: templates/start.sh.j2
+# (used by both the Linux systemd unit and the macOS launchd plist).
+otel_enabled: false
+otel_version: "2.23.0"
+otel_download_url: "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v{{ otel_version }}/opentelemetry-javaagent.jar"
+otel_jar_name: "opentelemetry-javaagent.jar"
+# Where the jar will be stored
+otel_jar_full_path: "{{ installation_root_folder }}/otel/{{ otel_jar_name }}"
+
+otel_service_name: "{{ app_name }}"
+otel_environment: "prod"
+otel_namespace: "daict"
+otel_customer: "default"
+otel_alloy_endpoint: "http://{{ otel_alloy_host }}:{{ otel_alloy_port }}"
+otel_alloy_host: "localhost"
+otel_alloy_port: 4317
+
 extra_java_options: []
 
 base_application_properties: {}

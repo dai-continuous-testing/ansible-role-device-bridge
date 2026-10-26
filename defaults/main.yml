@@ -11,7 +11,7 @@ app_name: device-bridge
 __app_version: "1.0.DEBUG"
 
 
-__java_version: 25.0.4_7
+__java_version: 25.0.5_8
 
 # OpenTelemetry Configuration
 # device-bridge is a standard JVM app (bin/device-bridge -> java ai.digital.ct.bridge.DeviceBridge),
